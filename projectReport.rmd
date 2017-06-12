@@ -1,0 +1,77 @@
+Practical Machine Learning Course Project       AUTHOR : Vansh Jain
+
+
+library(caret)
+library(corrplot)
+
+
+LOAD DATA:
+
+--Save the URLs.
+--Download the files using download.file functions.
+--Load the data using read.csv function
+
+
+fileUrl1 <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+fileUrl2 <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+download.file(fileUrl1,destfile = "training.csv")
+download.file(fileUrl2,destfile = "testing.csv")
+
+training <- read.csv("training.csv")
+testing <- read.csv("testing.csv")
+
+
+--Now remove the variables which contains NAs in them since these variables will not provide much power for prediction.
+--Remove name,timestamp,etc. identifiers.
+
+
+data_test_NAs <- apply(testing, 2, function(x) {sum(is.na(x))})
+data_test_clean <- testing[,which(data_test_NAs == 0)]
+data_test_clean <- data_test_clean[8:length(data_test_clean)]
+
+
+--Now store the variable names which will be used for prediction.
+--Data from only these variables will be used for prediction.
+
+
+a <- names(data_test_clean)
+
+data_train_clean <- training[a[1:52]]
+data_train_clean$classe <- training$classe
+
+
+--Split the cleaned training data into new_train and new_test data sets.
+
+
+
+inTrain <- createDataPartition(y = data_train_clean$classe, p = 0.7, list = FALSE)
+new_train <- data_train_clean[inTrain, ]
+new_test <- data_train_clean[-inTrain, ]
+
+
+--Plot a correlation Matrix
+
+
+corrplot(new_test, order = "FPC", method = "circle", type = "lower", tl.cex = 0.8,  tl.col = rgb(0, 0, 0))
+
+
+BOOSTING MODEL:
+
+--Fit model with boosting algorithm and 10-fold cross validation to predict classe with all other predictors.
+--Comparing this model with the random forest model, Both have almost similar accuracy therefore we can use any of them.
+--I am using the boosting model.
+
+
+boostFit <- train(classe ~ ., method = "gbm", data = new_train, verbose = TRUE, trControl = trainControl(method = "cv", number = 10))
+
+
+pred1 <- predict(boostFit,new_test)
+confusionMatrix(new_test$classe,pred1)
+
+--Store the final predictions of the testing data set in the final_predictions variable.
+
+final_predictions <- predict(boostFit,data_test_clean)
+
+--This gives all 20 correct answers in the quiz for this project.
+

@@ -1,0 +1,28 @@
+<p>library(caret)</p>
+<p>library(corrplot)</p>
+<p><br />LOAD DATA:</p>
+<p>--Save the URLs.<br />--Download the files using download.file functions.<br />--Load the data using read.csv function</p>
+<p><br />fileUrl1 &lt;- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"<br />fileUrl2 &lt;- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"</p>
+<p>download.file(fileUrl1,destfile = "training.csv")<br />download.file(fileUrl2,destfile = "testing.csv")</p>
+<p>training &lt;- read.csv("training.csv")<br />testing &lt;- read.csv("testing.csv")</p>
+<p><br />--Now remove the variables which contains NAs in them since these variables will not provide much power for prediction.<br />--Remove name,timestamp,etc. identifiers.</p>
+<p><br />data_test_NAs &lt;- apply(testing, 2, function(x) {sum(is.na(x))})<br />data_test_clean &lt;- testing[,which(data_test_NAs == 0)]<br />data_test_clean &lt;- data_test_clean[8:length(data_test_clean)]</p>
+<p><br />--Now store the variable names which will be used for prediction.<br />--Data from only these variables will be used for prediction.</p>
+<p><br />a &lt;- names(data_test_clean)</p>
+<p>data_train_clean &lt;- training[a[1:52]]<br />data_train_clean$classe &lt;- training$classe</p>
+<p><br />--Split the cleaned training data into new_train and new_test data sets.</p>
+<p>&nbsp;</p>
+<p>inTrain &lt;- createDataPartition(y = data_train_clean$classe, p = 0.7, list = FALSE)<br />new_train &lt;- data_train_clean[inTrain, ]<br />new_test &lt;- data_train_clean[-inTrain, ]</p>
+<p><br />--Plot a correlation Matrix</p>
+<p><br />corrplot(new_test, order = "FPC", method = "circle", type = "lower", tl.cex = 0.8, tl.col = rgb(0, 0, 0))</p>
+<p><br />BOOSTING MODEL:</p>
+<p>--Fit model with boosting algorithm and 10-fold cross validation to predict classe with all other predictors.<br />--Comparing this model with the random forest model, Both have almost similar accuracy therefore we can use any of them.</p>
+<p>--I am using the boosting model.</p>
+<p>&nbsp;</p>
+<p>--link to view the plot :&nbsp;https://www.dropbox.com/s/p5eoeitrcrrl248/Rplot.png?dl=0</p>
+<p><br />boostFit &lt;- train(classe ~ ., method = "gbm", data = new_train, verbose = TRUE, trControl = trainControl(method = "cv", number = 10))</p>
+<p><br />pred1 &lt;- predict(boostFit,new_test)<br />confusionMatrix(new_test$classe,pred1)</p>
+<p>--Store the final predictions of the testing data set in the final_predictions variable.</p>
+<p>final_predictions &lt;- predict(boostFit,data_test_clean)</p>
+<p>--This gives all 20 correct answers in the quiz for this project.</p>
+<p>&nbsp;</p>
